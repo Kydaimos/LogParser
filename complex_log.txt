@@ -1,0 +1,16 @@
+timestamp,level,module,message
+2026-04-01 10:00:01,INFO,database,User authentication successful
+2026-04-01 10:00:05,ERROR,database,Database connection failed
+2026-04-01 10:00:10,INFO,auth,User login attempt
+2026-04-01 10:00:15,WARNING,network,Network timeout detected
+2026-04-01 10:00:20,ERROR,database,Database query failed
+2026-04-01 10:00:25,INFO,auth,User logout successful
+2026-04-01 10:00:30,ERROR,system,System memory critical
+2026-04-01 10:00:35,INFO,database,Database backup completed
+2026-04-01 10:00:40,WARNING,auth,User authentication failed
+2026-04-01 10:00:45,ERROR,network,Network connection refused
+2026-04-01 10:00:50,INFO,system,System maintenance started
+2026-04-01 10:00:55,ERROR,database,Database connection timeout
+2026-04-01 10:01:00,INFO,auth,User session expired
+2026-04-01 10:01:05,WARNING,system,System disk space low
+2026-04-01 10:01:10,ERROR,auth,User authentication timeout
