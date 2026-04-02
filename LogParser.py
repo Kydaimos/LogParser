@@ -5,6 +5,8 @@ LogParser.py - A simple script to parse text files and count keyword occurrences
 Usage:
     python LogParser.py <file_path> <column_index> [keyword] [delimiter] [--group]
     python LogParser.py <file_path> <column_index> --all [delimiter]
+    python LogParser.py <file_path> <column_index>           # no keyword   = analyze all entries
+    python LogParser.py                                      # no arguments = interactive mode
     
 Options:
     keyword    Search for specific keyword (optional - if omitted, shows all entries)
@@ -20,7 +22,7 @@ import matplotlib.pyplot as plt
 import re
 
 
-def parse_file_for_keyword(file_path: str, column_index: int, keyword: str = None, delimiter: str = None, group_by_keyword: bool = False) -> Dict[str, int]:
+def parse_file_for_keyword(file_path: str, column_index: int, keyword: str = None, delimiter: str = None, group_by_keyword: bool = False) -> Dict[str, any]:  # return values are mixed types (int, str, Counter, list, bool)
     """
     Parse a text file and count occurrences of a keyword in a specific column.
     Also analyzes all keywords in the column for comprehensive statistics.
@@ -52,7 +54,9 @@ def parse_file_for_keyword(file_path: str, column_index: int, keyword: str = Non
                 
             total_lines += 1
             
-            # Auto-detect delimiter if not specified
+            # Auto-detect delimiter if not specified.
+            # NOTE: Once set on the first non-empty line, the delimiter is locked in
+            # for the rest of the file. Mixed-delimiter files are not supported.
             if delimiter is None:
                 if '\t' in line:
                     delimiter = '\t'
@@ -278,7 +282,7 @@ def display_results(results: Dict) -> None:
             create_pie_chart(results['all_keywords'], results['keyword'], results['column_index'])
     except KeyboardInterrupt:
         print("\nSkipping pie chart display.")
-    except:
+    except:  # Broad catch handles non-interactive environments (piped input, redirected stdin)
         # If we can't get user input (non-interactive mode), show chart automatically
         if len(results['all_keywords']) > 1:
             create_pie_chart(results['all_keywords'], results['keyword'], results['column_index'])
@@ -307,7 +311,7 @@ def interactive_mode() -> None:
     delimiter = input("Enter delimiter (press Enter for auto-detection): ").strip()
     delimiter = delimiter if delimiter else None
     
-    # Ask about grouping
+    # Ask about grouping (only meaningful when a keyword is provided; ignored in analyze-all mode)
     group_choice = input("Group all entries containing the keyword together? (y/n): ").strip().lower()
     group_by_keyword = group_choice in ['y', 'yes', '1']
     
@@ -363,13 +367,15 @@ def main():
         analyze_all = True
         print("No keyword provided. Analyzing ALL entries in the column...")
     
+    # Note: analyze_all is not passed to parse_file_for_keyword — the function derives
+    # it internally from keyword being None. The local variable is used only for the
+    # informational print above and the --all flag override logic.
     try:
         results = parse_file_for_keyword(file_path, column_index, keyword, delimiter, group_by_keyword)
         display_results(results)
     except Exception as e:
         print(f"Error: {e}")
         sys.exit(1)
-
 
 if __name__ == "__main__":
     main()
