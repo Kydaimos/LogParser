@@ -21,6 +21,16 @@ from collections import Counter
 import matplotlib.pyplot as plt
 import re
 
+# --- Display constants ---
+TOP_N_SUMMARY            = 20  # number of keywords shown in the summary table
+MAX_MATCHES_DISPLAY      = 5   # matching lines shown in keyword search mode
+MAX_ENTRIES_DISPLAY      = 10  # sample entries shown in all-entries mode
+RESULTS_WIDTH            = 50  # width of the results section separators
+INTERACTIVE_HEADER_WIDTH = 40  # width of the interactive mode header
+RANK_COL_WIDTH           = 6   # rank column width in the summary table
+COUNT_COL_WIDTH          = 10  # count column width in the summary table
+DEFAULT_KW_COL_WIDTH     = 30  # fallback keyword column width when no data is present
+
 
 def parse_file_for_keyword(file_path: str, column_index: int, keyword: str = None, delimiter: str = None, group_by_keyword: bool = False) -> Dict[str, any]:  # return values are mixed types (int, str, Counter, list, bool)
     """
@@ -189,9 +199,15 @@ def create_pie_chart(keyword_counter: Counter, target_keyword: str, column_index
 
 def display_keyword_summary(keyword_counter: Counter, target_keyword: str) -> None:
     """Display a summary of all keywords found in the column."""
-    print(f"\n{'='*60}")
+    # Dynamically size the keyword column to fit the longest value in the top 20
+    top_keywords = keyword_counter.most_common(TOP_N_SUMMARY)
+    kw_col_width = max((len(kw) for kw, _ in top_keywords), default=DEFAULT_KW_COL_WIDTH)
+    kw_col_width = max(kw_col_width, len("Keyword"))  # Never narrower than the header
+    table_width = RANK_COL_WIDTH + kw_col_width + COUNT_COL_WIDTH + 10 + 2  # Rank + Keyword + Count + Percentage + spacing
+
+    print(f"\n{'='*table_width}")
     print(f"All Keywords Analysis (Column Summary)")
-    print(f"{'='*60}")
+    print(f"{'='*table_width}")
     print(f"Total unique keywords found: {len(keyword_counter)}")
     print(f"Total keyword occurrences: {sum(keyword_counter.values())}")
     
@@ -204,33 +220,33 @@ def display_keyword_summary(keyword_counter: Counter, target_keyword: str) -> No
         print(f"Target keyword represents {target_count}/{total_occurrences} entries")
         print(f"Target keyword dominance: {(target_count/total_occurrences*100):.1f}% of all entries")
     
-    print(f"\nTop 20 Keywords:")
-    print(f"{'-'*60}")
-    print(f"{'Rank':<6} {'Keyword':<30} {'Count':<10} {'Percentage':<10}")
-    print(f"{'-'*60}")
+    print(f"\nTop {TOP_N_SUMMARY} Keywords:")
+    print(f"{'-'*table_width}")
+    print(f"{'Rank':<{RANK_COL_WIDTH}} {'Keyword':<{kw_col_width}} {'Count':<{COUNT_COL_WIDTH}} {'Percentage'}")
+    print(f"{'-'*table_width}")
     
-    for i, (keyword, count) in enumerate(keyword_counter.most_common(20), 1):
+    for i, (keyword, count) in enumerate(top_keywords, 1):
         percentage = (count / total_occurrences * 100) if total_occurrences > 0 else 0
         
         # Highlight the target keyword
         if target_keyword.lower() in keyword.lower():
-            print(f"{'→ ' + str(i):<6} {keyword:<30} {count:<10} {percentage:<10.1f}% ★")
+            print(f"{'→ ' + str(i):<{RANK_COL_WIDTH}} {keyword:<{kw_col_width}} {count:<{COUNT_COL_WIDTH}} {percentage:.1f}% ★")
         else:
-            print(f"{i:<6} {keyword:<30} {count:<10} {percentage:<10.1f}%")
+            print(f"{i:<{RANK_COL_WIDTH}} {keyword:<{kw_col_width}} {count:<{COUNT_COL_WIDTH}} {percentage:.1f}%")
     
-    if len(keyword_counter) > 20:
-        remaining = len(keyword_counter) - 20
+    if len(keyword_counter) > TOP_N_SUMMARY:
+        remaining = len(keyword_counter) - TOP_N_SUMMARY
         print(f"\n... and {remaining} more unique keywords")
 
 
 def display_results(results: Dict) -> None:
     """Display the parsing results in a formatted way."""
-    print(f"\n{'='*50}")
+    print(f"\n{'='*RESULTS_WIDTH}")
     if results.get('analyze_all', False):
         print(f"Log Parser Results - All Entries Analysis")
     else:
         print(f"Log Parser Results - Target Keyword Analysis")
-    print(f"{'='*50}")
+    print(f"{'='*RESULTS_WIDTH}")
     print(f"Search target: '{results['keyword']}'")
     print(f"Column index: {results['column_index']}")
     print(f"Delimiter used: '{results['delimiter_used']}'")
@@ -239,14 +255,14 @@ def display_results(results: Dict) -> None:
     # Enhanced comparison
     if results.get('analyze_all', False):
         print(f"\n📊 COMPLETE COLUMN ANALYSIS:")
-        print(f"{'─'*50}")
+        print(f"{'─'*RESULTS_WIDTH}")
         print(f"Total unique entries: {results['unique_keywords']}")
         print(f"Total log entries processed: {results['total_lines']}")
         print(f"Coverage: {results['count']}/{results['total_lines']} entries analyzed")
         print(f"Coverage percentage: {results['percentage']:.2f}%")
     else:
         print(f"\n📊 KEYWORD vs TOTAL LOGS COMPARISON:")
-        print(f"{'─'*50}")
+        print(f"{'─'*RESULTS_WIDTH}")
         print(f"Target keyword occurrences: {results['count']}")
         print(f"Total log entries processed: {results['total_lines']}")
         print(f"Keyword-to-total ratio: {results['count']}/{results['total_lines']}")
@@ -255,20 +271,20 @@ def display_results(results: Dict) -> None:
     
     if results['matches'] and not results.get('analyze_all', False):
         print(f"\n🔍 Matching lines for target keyword:")
-        print(f"{'-'*50}")
-        for match in results['matches'][:5]:  # Show first 5 matches
+        print(f"{'-'*RESULTS_WIDTH}")
+        for match in results['matches'][:MAX_MATCHES_DISPLAY]:
             print(f"Line {match['line_number']}: {match['column_value']}")
         
-        if len(results['matches']) > 5:
-            print(f"... and {len(results['matches']) - 5} more matches")
+        if len(results['matches']) > MAX_MATCHES_DISPLAY:
+            print(f"... and {len(results['matches']) - MAX_MATCHES_DISPLAY} more matches")
     elif results.get('analyze_all', False):
         print(f"\n📋 Sample entries from the column:")
-        print(f"{'-'*50}")
-        for match in results['matches'][:10]:  # Show first 10 entries when analyzing all
+        print(f"{'-'*RESULTS_WIDTH}")
+        for match in results['matches'][:MAX_ENTRIES_DISPLAY]:
             print(f"Line {match['line_number']}: {match['column_value']}")
         
-        if len(results['matches']) > 10:
-            print(f"... and {len(results['matches']) - 10} more entries")
+        if len(results['matches']) > MAX_ENTRIES_DISPLAY:
+            print(f"... and {len(results['matches']) - MAX_ENTRIES_DISPLAY} more entries")
     else:
         print(f"\n❌ No matches found for keyword '{results['keyword']}'")
     
@@ -289,8 +305,8 @@ def display_results(results: Dict) -> None:
 
 def interactive_mode() -> None:
     """Run the script in interactive mode."""
-    print("Log Parser V2 - Interactive Mode")
-    print("=" * 40)
+    print("Log Parser - Interactive Mode")
+    print("=" * INTERACTIVE_HEADER_WIDTH)
     
     # Get file path
     file_path = input("Enter the path to your text file: ").strip()
