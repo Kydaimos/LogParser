@@ -139,15 +139,20 @@ def create_pie_chart(keyword_counter: Counter, target_keyword: str, column_index
             if target_keyword.lower() in keyword.lower():
                 colors[i] = 'red'
         
-        # Create the pie chart
-        plt.figure(figsize=(12, 8))
-        wedges, texts, autotexts = plt.pie(sizes, labels=labels, colors=colors, 
-                                          autopct='%1.1f%%', startangle=90,
-                                          wedgeprops={'edgecolor': 'black', 'linewidth': 1.5})
+        # Create the pie chart with proper spacing
+        fig, ax = plt.subplots(figsize=(12, 10))  # Increased height for better spacing
         
-        # Customize the chart
-        plt.title(f'Keyword Distribution in Column {column_index}\n(Top 10 Keywords)', 
-                 fontsize=14, fontweight='bold')
+        # Add more space at the top for title
+        plt.subplots_adjust(top=0.85, bottom=0.1, left=0.1, right=0.9)
+        
+        wedges, texts, autotexts = ax.pie(sizes, labels=labels, colors=colors, 
+                                            autopct='%1.1f%%', startangle=90,
+                                            wedgeprops={'edgecolor': 'black', 'linewidth': 1.5},
+                                            pctdistance=0.85, labeldistance=1.1)  # Push labels outward
+        
+        # Customize the chart with title positioned higher
+        fig.suptitle(f'Keyword Distribution in Column {column_index}\n(Top 10 Keywords)', 
+                        fontsize=16, fontweight='bold', y=0.95)  # Position title higher
         
         # Make percentage text more readable with better contrast
         for autotext in autotexts:
@@ -157,15 +162,19 @@ def create_pie_chart(keyword_counter: Counter, target_keyword: str, column_index
             # Add white background/outline for better readability
             autotext.set_bbox(dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.8, edgecolor='black'))
         
+        # Style the slice labels for better readability
+        for text in texts:
+            text.set_fontsize(9)
+            text.set_fontweight('normal')
+        
         # Add legend if there are many keywords
         if len(keyword_counter) > 10:
             remaining_count = sum(count for keyword, count in keyword_counter.most_common()[10:])
             if remaining_count > 0:
                 plt.figtext(0.02, 0.02, f"Note: {len(keyword_counter) - 10} other keywords with {remaining_count} total occurrences not shown", 
-                           fontsize=8, style='italic')
+                            fontsize=8, style='italic')
         
-        plt.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle
-        plt.tight_layout()
+        ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle
         plt.show()
         
     except ImportError:
@@ -185,7 +194,7 @@ def display_keyword_summary(keyword_counter: Counter, target_keyword: str) -> No
     # Calculate keyword distribution statistics
     total_occurrences = sum(keyword_counter.values())
     target_count = sum(count for keyword, count in keyword_counter.items() 
-                      if target_keyword.lower() in keyword.lower())
+                        if target_keyword.lower() in keyword.lower())
     
     if target_count > 0:
         print(f"Target keyword represents {target_count}/{total_occurrences} entries")
@@ -273,19 +282,6 @@ def display_results(results: Dict) -> None:
         # If we can't get user input (non-interactive mode), show chart automatically
         if len(results['all_keywords']) > 1:
             create_pie_chart(results['all_keywords'], results['keyword'], results['column_index'])
-    
-    # Ask user if they want to see the pie chart
-    try:
-        show_chart = input(f"\nWould you like to see a pie chart of keyword distribution? (y/n): ").strip().lower()
-        if show_chart in ['y', 'yes', '1']:
-            create_pie_chart(results['all_keywords'], results['keyword'], results['column_index'])
-    except KeyboardInterrupt:
-        print("\nSkipping pie chart display.")
-    except:
-        # If we can't get user input (non-interactive mode), show chart automatically
-        if len(results['all_keywords']) > 1:
-            create_pie_chart(results['all_keywords'], results['keyword'], results['column_index'])
-
 
 def interactive_mode() -> None:
     """Run the script in interactive mode."""
@@ -303,7 +299,9 @@ def interactive_mode() -> None:
         column_index = 0
     
     # Get keyword
-    keyword = input("Enter the keyword to search for: ").strip()
+    keyword = input("Enter the keyword to search for (or leave empty to analyze all entries): ").strip()
+    if not keyword:  # Handle empty keyword
+        keyword = None
     
     # Get delimiter (optional)
     delimiter = input("Enter delimiter (press Enter for auto-detection): ").strip()
