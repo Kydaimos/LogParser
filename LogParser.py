@@ -14,12 +14,11 @@ Options:
     --group    Group all entries containing the keyword together (instead of separate entries)
 """
 
-import sys
-import os
-from typing import Optional, Dict, List
 from collections import Counter
+from typing import Dict
 import matplotlib.pyplot as plt
-import re
+import os
+import sys
 
 # --- Display constants ---
 TOP_N_SUMMARY            = 20  # number of keywords shown in the summary table
